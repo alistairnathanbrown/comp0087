@@ -2,9 +2,9 @@ import re
 import csv
 import json
 from collections import defaultdict
-from typing import List, Dict, Tuple, Optional, Set
+from typing import List, Dict, Optional, Set
 
-class IdiomDataParser:
+class SimpleIdiomParser:
     def __init__(self, filepath: str):
         """
         Initialize the parser with the path to the dataset.
@@ -13,17 +13,20 @@ class IdiomDataParser:
             filepath: Path to the CSV file containing the idiom data
         """
         self.filepath = filepath
-        self.data = defaultdict(dict)
-        self.id_to_idiom = {}
+        self.data = defaultdict(list)
         self.idioms_set = set()
         
-    def parse_data(self) -> Dict:
+    def parse_data(self) -> List[Dict]:
         """
         Parse the data from the CSV file and organize it into a structured format.
+        Assumes entries with the same ID are grouped as:
+        1. First entry: the idiom expression
+        2. Second entry: the good paraphrase
         
         Returns:
-            Dict: A dictionary containing the parsed data organized by group IDs
+            List[Dict]: A list of structured idiom entries
         """
+        # Group entries by their base IDs
         with open(self.filepath, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
             header = next(reader)  # Skip the header
@@ -32,72 +35,52 @@ class IdiomDataParser:
                 if len(row) < 2:
                     continue  # Skip incomplete rows
                 
-                group_id, sentence = row[0], row[1]
-                group_id = str(group_id).strip()
+                label, sentence = row[0], row[1]
+                # Strip the last digit for grouping if needed
+                base_id = label[:-1] if len(label) > 1 else label
                 
-                # Extract the base ID (without the last digit)
-                base_id = group_id[:-1] if len(group_id) > 1 else group_id
-                
-                # Initialize the group entry if it's a new group
-                if base_id not in self.data:
-                    self.data[base_id] = {
-                        "idiom_sentence": None,
-                        "good_paraphrase": None,
-                        "bad_paraphrase": None,
-                        "idiom": None
-                    }
-                
-                # Extract the idiom if present
+                self.data[base_id].append((label, sentence))
+        
+        # Process each group to extract idiom and paraphrase
+        structured_data = []
+        for base_id, entries in self.data.items():
+            # Sort entries by label to ensure consistent processing
+            entries.sort(key=lambda x: x[0])
+            
+            # First entry should contain the idiom
+            idiom_entry = None
+            for label, sentence in entries:
                 idiom_match = re.search(r'ID(.*?)ID', sentence)
                 if idiom_match:
                     idiom = idiom_match.group(1)
-                    self.data[base_id]["idiom"] = idiom
-                    self.data[base_id]["idiom_sentence"] = sentence
+                    idiom_entry = (label, sentence, idiom)
                     self.idioms_set.add(idiom)
-                    self.id_to_idiom[base_id] = idiom
-                elif self.data[base_id]["good_paraphrase"] is None:
-                    # Assume the first non-idiom sentence is a good paraphrase
-                    self.data[base_id]["good_paraphrase"] = sentence
-                else:
-                    # Assume any additional sentences are bad paraphrases
-                    self.data[base_id]["bad_paraphrase"] = sentence
-        
-        return dict(self.data)
-    
-    def create_structured_dataset(self) -> List[Dict]:
-        """
-        Convert the parsed data into a structured format.
-        
-        Returns:
-            List[Dict]: A list of dictionaries containing idiom examples
-        """
-        if not self.data:
-            self.parse_data()
+                    break
             
-        structured_data = []
-        
-        for base_id, entry in self.data.items():
-            # Skip incomplete entries
-            if not (entry["idiom_sentence"] and entry["good_paraphrase"]):
-                continue
+            if not idiom_entry:
+                continue  # Skip if no idiom found
+            
+            # Find the good paraphrase (entry without ID...ID)
+            good_paraphrase = None
+            for label, sentence in entries:
+                if "ID" not in sentence:
+                    good_paraphrase = (label, sentence)
+                    break
+            
+            # Only add if we have both idiom and good paraphrase
+            if idiom_entry and good_paraphrase:
+                _, idiom_sentence, idiom = idiom_entry
+                _, paraphrase_sentence = good_paraphrase
                 
-            # Extract the idiom text and its context
-            idiom = entry["idiom"]
-            idiom_sentence = entry["idiom_sentence"].replace(f"ID{idiom}ID", idiom)
-            good_paraphrase = entry["good_paraphrase"]
-            bad_paraphrase = entry["bad_paraphrase"]
-            
-            data_point = {
-                "id": base_id,
-                "idiom": idiom,
-                "idiom_sentence": idiom_sentence,
-                "original_idiom_sentence": entry["idiom_sentence"],
-                "good_paraphrase": good_paraphrase,
-                "has_bad_paraphrase": bad_paraphrase is not None,
-                "bad_paraphrase": bad_paraphrase
-            }
-            
-            structured_data.append(data_point)
+                example = {
+                    "id": base_id,
+                    "idiom": idiom,
+                    "idiom_sentence": idiom_sentence.replace(f"ID{idiom}ID", idiom),
+                    "original_idiom_sentence": idiom_sentence,
+                    "good_paraphrase": paraphrase_sentence
+                }
+                
+                structured_data.append(example)
         
         return structured_data
     
@@ -108,7 +91,7 @@ class IdiomDataParser:
         Args:
             output_path: Path where to save the JSON file
         """
-        structured_data = self.create_structured_dataset()
+        structured_data = self.parse_data()
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(structured_data, f, indent=2)
@@ -120,12 +103,12 @@ class IdiomDataParser:
         Args:
             output_path: Path where to save the CSV file
         """
-        structured_data = self.create_structured_dataset()
+        structured_data = self.parse_data()
         
         # Define the fieldnames based on the data structure
         fieldnames = [
             "id", "idiom", "idiom_sentence", "original_idiom_sentence", 
-            "good_paraphrase", "has_bad_paraphrase", "bad_paraphrase"
+            "good_paraphrase"
         ]
         
         with open(output_path, 'w', encoding='utf-8', newline='') as f:
@@ -141,24 +124,14 @@ class IdiomDataParser:
         Args:
             output_path: Path where to save the idioms list
         """
-        idioms_list = self.get_idioms_list()
+        parsed_data = self.parse_data()  # Make sure idioms are collected
+        idioms_list = list(self.idioms_set)
+        idioms_list.sort()  # Sort alphabetically
         
         with open(output_path, 'w', encoding='utf-8') as f:
             for idiom in idioms_list:
                 f.write(f"{idiom}\n")
             
-    def get_idioms_list(self) -> List[str]:
-        """
-        Get a list of all unique idioms in the dataset.
-        
-        Returns:
-            List[str]: A list of all unique idioms
-        """
-        if not self.idioms_set and self.filepath:
-            self.parse_data()
-        
-        return list(self.idioms_set)
-
     def get_stats(self) -> Dict:
         """
         Get statistics about the parsed data.
@@ -166,13 +139,11 @@ class IdiomDataParser:
         Returns:
             Dict: A dictionary containing various statistics
         """
-        data = self.create_structured_dataset()
+        data = self.parse_data()
         
         stats = {
             "total_examples": len(data),
-            "unique_idioms": len(self.get_idioms_list()),
-            "examples_with_bad_paraphrase": sum(1 for item in data if item["has_bad_paraphrase"]),
-            "examples_without_bad_paraphrase": sum(1 for item in data if not item["has_bad_paraphrase"])
+            "unique_idioms": len(self.idioms_set)
         }
         
         return stats
@@ -181,28 +152,26 @@ class IdiomDataParser:
 # Example usage
 if __name__ == "__main__":
     import os
+    import sys
     
     # Create output directory if it doesn't exist
     output_dir = "idiom_data"
     os.makedirs(output_dir, exist_ok=True)
     
+    # Get input file from command line or use default
+    input_file = sys.argv[1] if len(sys.argv) > 1 else "idiom_data.csv"
+    
     # Initialize the parser with the path to your data
-    input_file = "data/best_data_trainer.csv"
-    parser = IdiomDataParser(input_file)
+    parser = SimpleIdiomParser(input_file)
     
     # Parse the data
-    parsed_data = parser.parse_data()
-    
-    # Create a structured format for the data
-    structured_data = parser.create_structured_dataset()
+    structured_data = parser.parse_data()
     
     # Print some statistics
     stats = parser.get_stats()
     print(f"Processing file: {input_file}")
     print(f"Total number of idiom examples: {stats['total_examples']}")
     print(f"Total number of unique idioms: {stats['unique_idioms']}")
-    print(f"Examples with bad paraphrases: {stats['examples_with_bad_paraphrase']}")
-    print(f"Examples without bad paraphrases: {stats['examples_without_bad_paraphrase']}")
     
     # Save the data in different formats
     parser.save_json(os.path.join(output_dir, "idiom_dataset.json"))
