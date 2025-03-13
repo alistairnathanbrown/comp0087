@@ -3,9 +3,13 @@ import pandas as pd
 import json
 from sacrebleu.metrics import CHRF
 
-os.makedirs('outputs', exist_ok=True)
+script_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
+data_file = os.path.join(project_root, 'idiom_data', 'idiom_dataset.csv')
 
-df = pd.read_csv('idiom_data/idiom_dataset.csv')
+output_dir = os.path.join(project_root, 'outputs')
+os.makedirs(output_dir, exist_ok=True)
+df = pd.read_csv(data_file)
 
 chrf = CHRF()
 results = []
@@ -19,10 +23,10 @@ for _, row in df.iterrows():
 
 results_df = pd.DataFrame(results)
 
-csv_output_path = os.path.join('outputs', 'chrF_scores.csv')
+csv_output_path = os.path.join(output_dir, 'chrF_scores.csv')
 results_df.to_csv(csv_output_path, index=False)
 
-json_output_path = os.path.join('outputs', 'chrF_scores.json')
+json_output_path = os.path.join(output_dir, 'chrF_scores.json')
 with open(json_output_path, 'w') as json_file:
     json.dump(results, json_file, indent=4)
 
