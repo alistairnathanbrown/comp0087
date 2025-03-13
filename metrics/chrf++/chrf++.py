@@ -7,7 +7,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
 data_file = os.path.join(project_root, 'idiom_data', 'idiom_dataset.csv')
 
-output_dir = os.path.join(project_root, 'outputs')
+output_dir = os.path.join(project_root, 'metrics', 'chrf++', 'outputs')
 os.makedirs(output_dir, exist_ok=True)
 df = pd.read_csv(data_file)
 
@@ -16,7 +16,7 @@ results = []
 
 for _, row in df.iterrows():
     id_val = row['id']
-    hypothesis = row['idiom_sentance']
+    hypothesis = row['idiom_sentence']
     reference = row['good_paraphrase']
     score = chrf.sentence_score(hypothesis, [reference]).score
     results.append({'id': id_val, 'score': score})
