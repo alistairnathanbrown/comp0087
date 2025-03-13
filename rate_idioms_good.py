@@ -1,17 +1,23 @@
-import json
+import csv
 import os
 
 
-def load_dataset(file_path):
-    """Load the JSON dataset from a file."""
+def load_csv(file_path):
+    """Load data from a CSV file."""
+    data = []
     with open(file_path, 'r', encoding='utf-8') as file:
-        return json.load(file)
+        reader = csv.DictReader(file)
+        for row in reader:
+            data.append(row)
+    return data
 
 
-def save_dataset(file_path, data):
-    """Save the dataset back to a file."""
-    with open(file_path, 'w', encoding='utf-8') as file:
-        json.dump(data, file, indent=2, ensure_ascii=False)
+def save_csv(file_path, data, fieldnames):
+    """Save data to a CSV file."""
+    with open(file_path, 'w', encoding='utf-8', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(data)
 
 
 def get_rating():
@@ -28,32 +34,36 @@ def get_rating():
 
 
 def main():
-    # Get the dataset file path
-    dataset_path = input("Enter the path to your JSON dataset file: ")
+    # Get the CSV file path
+    csv_path = input("Enter the path to your CSV file: ")
 
     # Check if file exists
-    if not os.path.exists(dataset_path):
-        print(f"File not found: {dataset_path}")
+    if not os.path.exists(csv_path):
+        print(f"File not found: {csv_path}")
         return
 
-    # Load the dataset
+    # Load the CSV data
     try:
-        data = load_dataset(dataset_path)
+        data = load_csv(csv_path)
         print(f"Loaded {len(data)} idiom entries.")
-    except json.JSONDecodeError:
-        print("Error: Invalid JSON format.")
-        return
     except Exception as e:
         print(f"Error loading file: {e}")
         return
 
+    # Check required columns
+    required_columns = ['idiom_sentence', 'good_paraphrase', 'idiom']
+    if not all(column in data[0] for column in required_columns):
+        print(f"CSV file is missing required columns. Needed: {required_columns}")
+        print(f"Found: {list(data[0].keys())}")
+        return
+
     # Output file path
-    output_path = input("Enter the path for the output JSON file (leave blank to overwrite original): ")
+    output_path = input("Enter the path for the output CSV file (leave blank to overwrite original): ")
     if not output_path:
-        output_path = dataset_path
+        output_path = csv_path
 
     # Track progress
-    progress_file = "idiom_sentence_progress.txt"
+    progress_file = "idiom_rating_progress.txt"
     start_index = 0
 
     # Check if progress file exists to resume
@@ -72,17 +82,20 @@ def main():
     print("3: Average - Acceptable usage of the idiom")
     print("4: Good - Natural and appropriate usage of the idiom")
 
-    # Process each idiom entry sequentially by position in the dataset
+    # Get field names (column headers) from the first row
+    fieldnames = list(data[0].keys())
+    if 'idiom_sentence_rating' not in fieldnames:
+        fieldnames.append('idiom_sentence_rating')
+
+    # Process each entry
     for i, entry in enumerate(data[start_index:], start=start_index):
         print("\n" + "=" * 70)
-        print(f"Entry {i + 1} of {len(data)} (Sequential position)")
-        print(f"Dataset ID: {entry['id']}")
-        print(f"Idiom: {entry['idiom']}")
+        print(f"Entry {i + 1} of {len(data)}")
 
-        # Check if the required fields exist
-        if 'idiom_sentence' not in entry or 'good_paraphrase' not in entry:
-            print("This entry is missing required fields. Skipping.")
-            continue
+        if 'id' in entry:
+            print(f"ID: {entry['id']}")
+
+        print(f"Idiom: {entry['idiom']}")
 
         # Display both sentences
         print("\n1. Original idiom sentence:")
@@ -110,7 +123,7 @@ def main():
                 break
 
     # Save the updated dataset
-    save_dataset(output_path, data)
+    save_csv(output_path, data, fieldnames)
     print(f"\nRating complete! Updated dataset saved to {output_path}")
 
     # Clean up progress file if completed
