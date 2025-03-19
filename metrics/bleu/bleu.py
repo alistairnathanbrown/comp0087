@@ -5,7 +5,7 @@ from sacrebleu.metrics import BLEU
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
-data_file = os.path.join(project_root, 'idiom_data', 'idiom_dataset.csv')
+data_file = os.path.join(project_root, 'idiom_data', 'idiom_dataset_en.csv')
 
 output_dir = os.path.join(project_root, 'metrics', 'bleu', 'outputs')
 os.makedirs(output_dir, exist_ok=True)
