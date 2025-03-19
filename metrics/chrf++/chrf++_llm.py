@@ -17,12 +17,14 @@ df = pd.read_csv(data_file)
 chrf = CHRF()
 results = []
 
+id_val = 0
 for _, row in df.iterrows():
-    id_val = row['id']
+    # id_val = row['id']
     reference = row['original_sentence']
     hypothesis = row['translated_sentence']
     score = chrf.sentence_score(hypothesis, [reference]).score
     results.append({'id': id_val, 'score': score})
+    id_val += 1
 
 results_df = pd.DataFrame(results)
 

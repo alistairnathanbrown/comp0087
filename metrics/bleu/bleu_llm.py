@@ -8,7 +8,7 @@ RESULTS_FILE = f"bleu_scores_{LLM_VERSION}"
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
-data_file = os.path.join(project_root, 'idiom_data', f'idiom_translation_{LLM_VERSION}.csv')
+data_file = os.path.join(project_root, 'results', f'idiom_translation_{LLM_VERSION}.csv')
 
 output_dir = os.path.join(project_root, 'metrics', 'bleu', 'outputs')
 os.makedirs(output_dir, exist_ok=True)
@@ -18,12 +18,14 @@ df = pd.read_csv(data_file)
 bleu = BLEU(effective_order=True)
 results = []
 
+id_val = 0
 for _, row in df.iterrows():
-    id_val = row['id']
+    # id_val = row['id']
     reference = row['original_sentence']
     hypothesis = row['translated_sentence']
     score = bleu.sentence_score(hypothesis, [reference]).score
     results.append({'id': id_val, 'score': score})
+    id_val += 1
 
 results_df = pd.DataFrame(results)
 
