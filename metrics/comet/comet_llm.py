@@ -5,7 +5,7 @@ import torch
 from comet import download_model, load_from_checkpoint
 
 LLM_VERSION = "Meta-Llama-3.1-8B-Instruct_20250317_151054"
-RESULTS_FILE = f"chrF_scores_{LLM_VERSION}"
+RESULTS_FILE = f"comet_scores_{LLM_VERSION}"
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
@@ -24,8 +24,8 @@ results = []
 id_val = 0
 for _, row in df.iterrows():
     # id_val = row['id']
-    hypothesis = row['idiom_sentence']
-    reference = row['good_paraphrase']
+    reference = row['original_sentence']
+    hypothesis = row['translated_sentence']
 
     data = [{
         "src": "",  # Source sentence is not used in this case
