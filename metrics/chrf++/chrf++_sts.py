@@ -28,7 +28,7 @@ for _, row in df.iterrows():
 results_df = pd.DataFrame(results)
 
 csv_output_path = os.path.join(output_dir, 'chrF_scores_sts.csv')
-results_df.to_csv(csv_output_path, index=False)
+results_df.to_csv(csv_output_path, index=False, sep="|")
 
 json_output_path = os.path.join(output_dir, 'chrF_scores_sts.json')
 with open(json_output_path, 'w') as json_file:
