@@ -5,21 +5,25 @@ from sacrebleu.metrics import CHRF
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
-data_file = os.path.join(project_root, 'sts', 'sts_all.txt')
+data_file = os.path.join(project_root, 'sts', 'sts_all.csv')
 
 output_dir = os.path.join(project_root, 'metrics', 'chrf++', 'outputs')
 os.makedirs(output_dir, exist_ok=True)
-df = pd.read_csv(data_file)
+df = pd.read_csv(data_file, 
+                 sep="\\|\\|",  # Use regex escape for pipe characters
+                 engine='python',  # Use Python engine for regex separator
+                 on_bad_lines='skip')
 
 chrf = CHRF()
 results = []
 
 for _, row in df.iterrows():
-    id_val = row['id']
-    hypothesis = row['idiom_sentence']
-    reference = row['good_paraphrase']
-    score = chrf.sentence_score(hypothesis, [reference]).score
-    results.append({'id': id_val, 'score': score})
+    # id_val = row['id']
+    s1= row['s1']
+    s2= row['s2']
+    sts_score = row['score']
+    score = chrf.sentence_score(s1, [s2]).score
+    results.append({'s1': s1, 's2': s2, 'sts_score': sts_score, 'metric_score': score})
 
 results_df = pd.DataFrame(results)
 
