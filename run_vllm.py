@@ -7,7 +7,7 @@ from datetime import datetime
 from vllm import LLM, SamplingParams
 from vllm.sampling_params import GuidedDecodingParams
 
-content_type = "base"
+content_type = "in_context"
 
 def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, checkpoint_interval=50, checkpoint_dir="checkpoints"):
     """
@@ -53,6 +53,7 @@ def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, che
     
     # System prompt for idiom translation
     if content_type == "base":
+        print("Running Content Type: " + content_type)
         content = """You are a translator specializing in idiomatic expressions. 
 
         You will be given a sentence with an idiom marked between ID tags like IDidiomID.
@@ -67,6 +68,7 @@ def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, che
         Keep the overall sentence structure intact, changing only the idiom."""
         
     elif content_type == "in_context":
+        print("Running Content Type: " + content_type)
         content = """You are a translator specializing in idiomatic expressions. 
 
         You will be given a sentence with an idiom marked between ID tags like IDidiomID.
@@ -460,7 +462,7 @@ def main():
     if args.run_id:
         run_id = args.run_id
         results = load_results_from_checkpoint(args.checkpoint_dir, run_id)
-        if results:
+        if results: 
             start_idx = len(results)
             print(f"Resuming from specific run ID: {run_id} (already processed {start_idx} sentences)")
         else:
