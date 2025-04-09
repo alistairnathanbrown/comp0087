@@ -4,7 +4,10 @@ import json
 import torch
 from comet import download_model, load_from_checkpoint
 
+#base:
 LLM_VERSION = "Meta-Llama-3.1-8B-Instruct_20250401_101254"
+#incontext:
+# LLM_VERSION = "Meta-Llama-3.1-8B-Instruct_20250409_141335"
 RESULTS_FILE = f"comet_scores_{LLM_VERSION}"
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
