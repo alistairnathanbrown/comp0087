@@ -184,6 +184,6 @@ results_df['comet_cotA_idiom'] = comet_cotA_idiom
 results_df['comet_cotB_idiom'] = comet_cotB_idiom
 results_df['comet_correct_idiom'] = comet_correct_idiom
 
-output_csv = 'combined_translations_and_comet_scores.csv'
+output_csv = 'combined_translations_and_comet_scores_slow.csv'
 results_df.to_csv(output_csv, index=False, encoding='utf-8')
 print(f"Final results saved to {output_csv}")
