@@ -26,7 +26,7 @@ def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, che
     llm = LLM(
         model=model_name,
         max_model_len=40816,  # Consider making this a parameter too
-        gpu_memory_utilization=0.95,
+        gpu_memory_utilization=0.95
     )
     
     # Define the expected JSON structure for guided decoding
@@ -50,95 +50,25 @@ def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, che
         return []
     
     # System prompt for idiom translation
-    #content = """You are a translator specializing in idiomatic expressions. 
+    content = """You are a translator specializing in idiomatic expressions. 
 
-    #You will be given a sentence with an idiom marked between ID tags like IDidiomID.
-    #Your task is to replace the idiom with a NON-FIGURATIVE, LITERAL explanation of what the idiom means.
-
-    #IMPORTANT: Do NOT simply add spaces between words or make minor changes - you must completely replace the idiom with its literal, non-idiomatic meaning.
-
-    #For example:
-    #- If you see "IDraining catsID and dogs" you might translate it to "raining very heavily"
-    #- If you see "IDkick the bucketID" you might translate it to "die"
-    #- If you see "IDbananarepublicID" you might translate it to "politically unstable country with corrupt government"
-
-    #Your response must be a valid JSON object with two fields:
-    #1. 'original_sentence' (the exact input)
-    #2. 'translated_sentence' (your translation with the idiom replaced with its literal meaning)
-
-    #Keep the overall sentence structure intact, changing only the idiom."""
-
-    #cot_content = """You are a translator specializing in idiomatic expressions. For the input sentence, the idiom is marked between ID tags (e.g., IDidiomID).
-
-    #You will be given a sentence with an idiom marked between ID tags like IDidiomID.
-    #Your task is to replace the idiom with a NON-FIGURATIVE, LITERAL explanation of what the idiom means.
-
-    #IMPORTANT: Do NOT simply add spaces between words or make minor changes - you must completely replace the idiom with its literal, non-idiomatic meaning.
-
-    #For example:
-    #- If you see "IDraining catsID and dogs" you might translate it to "raining very heavily"
-    #- If you see "IDkick the bucketID" you might translate it to "die"
-    #- If you see "IDbananarepublicID" you might translate it to "politically unstable country with corrupt government"
-
-    #Please follow these steps internally:
-    #1. Explain both the literal and figurative meanings of the idiom, including any relevant cultural or contextual nuances.
-    #2. Provide a direct, word-for-word literal translation of the idiom.
-    #3. Modify this literal translation to capture the idiom’s intended meaning naturally in <LANGUAGE>, taking into account common expressions and cultural context.
-    #4. Review your refined translation to check for any discrepancies with standard usage.
-
-    #Finally, replace the idiom in the original sentence with your final translation. Your answer should be a valid JSON object with two fields:
-    #- "original_sentence": the exact input sentence.
-    #- "translated_sentence": the sentence with the idiom replaced by its literal explanation.
-
-    #Do not include any of your internal reasoning in your final output."""
-
-    #cot_content = """You are an expert translator with a deep understanding of idiomatic expressions and their cultural contexts. For the input sentence, the idiom is marked between ID tags (e.gIDidiomID).
-
-    #Your task is to replace the idiom with a NON-FIGURATIVE, LITERAL explanation of what the idiom means.
-
-    #IMPORTANT: Do NOT simply add spaces between words or make minor changes - you must completely replace the idiom with its literal, non-idiomatic meaning. 
-
-    #For example:
-    #- If you see "IDraining catsID and dogs" you might translate it to "raining very heavily"
-    #- If you see "IDkick the bucketID" you might translate it to "die"
-    #- If you see "IDbananarepublicID" you might translate it to "politically unstable country with corrupt government"
-
-    #Internally, perform the following steps:
-    #1. Analyze the context of the idiom by identifying any cultural references, common usage patterns, and connotations beyond the literal words.
-    #2. Break down the idiom into its basic components, providing a straightforward, literal interpretation of each element.
-    #3. Synthesize these insights to construct a final, non-figurative, literal explanation of what the idiom means.
-    #4. Cross-check the resulting explanation to ensure that it accurately conveys the intended meaning without retaining any figurative language.
-
-    #Finally, replace the idiom in the original sentence with your final translation. Your answer should be a valid JSON object with two fields:
-    #- "original_sentence": the exact input sentence.
-    #- "translated_sentence": the sentence with the idiom replaced by its literal explanation.
-
-    #Do not include any of your internal reasoning in your final output."""
-
-    cot_content = """You are a translator with expert knowledge of idiomatic expressions and cultural nuances. For the input sentence, the idiom is enclosed in ID tags (e.g., IDidiomID). Your task is to replace the idiom with a non-figurative, literal explanation of its meaning.
-
-    Your task is to replace the idiom with a NON-FIGURATIVE, LITERAL explanation of what the idiom means. 
+    You will be given a sentence with an idiom marked between ID tags like IDidiomID.
+    Your task is to replace the idiom with a NON-FIGURATIVE, LITERAL explanation of what the idiom means.
 
     IMPORTANT: Do NOT simply add spaces between words or make minor changes - you must completely replace the idiom with its literal, non-idiomatic meaning.
 
     For example:
     - If you see "IDraining catsID and dogs" you might translate it to "raining very heavily"
     - If you see "IDkick the bucketID" you might translate it to "die"
-    - If you see "IDbananarepublicID" you might translate it to "politically unstable country with corrupt government" 
+    - If you see "IDbananarepublicID" you might translate it to "politically unstable country with corrupt government"
 
-    Internally, please perform the following steps:
-    1. Analyze the idiom by describing both its literal and figurative meanings, noting any cultural or contextual details.
-    2. Generate an initial, straightforward literal translation of the idiom.
-    3. Review the initial translation for clarity and correctness; refine it to ensure that it fully captures the intended meaning without any figurative language.
-    4. Confirm that your final refined translation is complete and accurate.
+    Your response must be a valid JSON object with two fields:
+    1. 'original_sentence' (the exact input)
+    2. 'translated_sentence' (your translation with the idiom replaced with its literal meaning)
 
-    Finally, replace the idiom in the original sentence with your final refined translation. Your answer should be a valid JSON object with two fields:
-    - "original_sentence": the exact input sentence.
-    - "translated_sentence": the sentence where the idiom has been replaced with its literal explanation.
-
-    Do not include any internal reasoning or draft steps in your final output."""
-
-    guided_decoding_params = GuidedDecodingParams(json=json_schema, backend="auto")
+    Keep the overall sentence structure intact, changing only the idiom."""
+    
+    guided_decoding_params = GuidedDecodingParams(json=json_schema)
     
     # Add sampling parameters with guided decoding
     sampling_params = SamplingParams(
@@ -191,17 +121,17 @@ def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, che
             conversation = [
                 {
                     "role": "system",
-                    "content": cot_content,
+                    "content": content,
                 },
                 {
                     "role": "user",
-                    "content": original_sentence    
+                    "content": original_sentence
                 },
             ]
             
             # Generate translation
             outputs = llm.chat(conversation, sampling_params=sampling_params)
-               
+            
             for output in outputs:
                 full_text = output.outputs[0].text
                 try:
@@ -304,7 +234,7 @@ def save_results(results, model_name, run_id=None):
     os.makedirs("results", exist_ok=True)
     
     # Save as JSON
-    json_filename = f"results/idiom_translation_{run_id}_variant_prompt_c.json"
+    json_filename = f"results/idiom_translation_{run_id}.json"
     with open(json_filename, 'w', encoding='utf-8') as f:
         json.dump({
             "model": model_name,
@@ -315,7 +245,7 @@ def save_results(results, model_name, run_id=None):
     print(f"Saved JSON results to {json_filename}")
     
     # Save as CSV
-    csv_filename = f"results/idiom_translation_{run_id}_variant_prompt_c.csv"
+    csv_filename = f"results/idiom_translation_{run_id}.csv"
     
     # Flatten any nested structures for CSV
     flat_results = []
@@ -332,19 +262,10 @@ def save_results(results, model_name, run_id=None):
     
     # Write CSV
     with open(csv_filename, 'w', newline='', encoding='utf-8') as f:
-        #if flat_results:
-        #    writer = csv.DictWriter(f, fieldnames=flat_results[0].keys())
-        #    writer.writeheader()
-        #    writer.writerows(flat_results)
-        fieldnames = ["original_sentence", "translated_sentence"]
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for item in results:
-          filtered_item = {
-            "original_sentence": item.get("original_sentence", ""),
-            "translated_sentence": item.get("translated_sentence", "")
-          }
-          writer.writerow(filtered_item)
+        if flat_results:
+            writer = csv.DictWriter(f, fieldnames=flat_results[0].keys())
+            writer.writeheader()
+            writer.writerows(flat_results)
     
     print(f"Saved CSV results to {csv_filename}")
     
@@ -454,7 +375,7 @@ def main():
     parser = argparse.ArgumentParser(description="Idiom Translation using vLLM")
     parser.add_argument("--model", type=str, default="meta-llama/Meta-Llama-3.1-8B-Instruct",
                         help="Model name or path")
-    parser.add_argument("--csv", type=str, default="idiom_data/idiom_dataset_en.csv",
+    parser.add_argument("--csv", type=str, default="idiom_data/idiom_dataset.csv",
                         help="Path to CSV file with idiom sentences")
     parser.add_argument("--temperature", type=float, default=0.7,
                         help="Temperature for generation")
