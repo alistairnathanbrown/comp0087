@@ -33,7 +33,6 @@ correct_df = pd.read_csv(DATASET, encoding='utf-8')
 correct_translations = pd.Series(correct_df.good_paraphrase.values, index=correct_df.id).to_dict()
 idiom_sentences = pd.Series(correct_df.idiom_sentence.values, index=correct_df.id).to_dict()
 
-
 all_ids = set(list(base_model_data.keys()) +
               list(incontext_model_data.keys()) +
               list(rag_model_data.keys()) +
@@ -62,6 +61,7 @@ comet = load_from_checkpoint(model_path)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 comet.to(device)
 
+
 def compute_comet_score(hypothesis: str, reference: str) -> float:
     if not hypothesis or not reference:
         return None
@@ -73,14 +73,14 @@ def compute_comet_score(hypothesis: str, reference: str) -> float:
     scores = comet.predict(data)
     return scores[0]
 
-#comet scores against good_paraphrase
+
+# Initialize lists for storing COMET scores
 comet_base = []
 comet_incontext = []
 comet_rag = []
 comet_cotA = []
 comet_cotB = []
 
-#comet scores against original idiomatic
 comet_base_idiom = []
 comet_incontext_idiom = []
 comet_rag_idiom = []
@@ -88,27 +88,30 @@ comet_cotA_idiom = []
 comet_cotB_idiom = []
 comet_correct_idiom = []
 
+# Define the checkpoint interval
+CHECKPOINT_INTERVAL = 50
+
 for idx, row in tqdm(results_df.iterrows(), total=len(results_df), desc="Processing rows"):
-    # Reference for first set: correct translation (good_paraphrase)
+    # Reference for the first set: correct translation (good_paraphrase)
     ref_good = row['correct_translation']
 
-    # Compute COMET scores where reference is the good translation
+    # Compute COMET scores using the good translation as the reference
     base_score = compute_comet_score(row['base_model_output'], ref_good) if row['base_model_output'] and ref_good else None
     incontext_score = compute_comet_score(row['incontext_model_output'], ref_good) if row['incontext_model_output'] and ref_good else None
     rag_score = compute_comet_score(row['rag_model_output'], ref_good) if row['rag_model_output'] and ref_good else None
     cotA_score = compute_comet_score(row['cotA_model_output'], ref_good) if row['cotA_model_output'] and ref_good else None
     cotB_score = compute_comet_score(row['cotB_model_output'], ref_good) if row['cotB_model_output'] and ref_good else None
 
-    comet_base.append(base_score)
-    comet_incontext.append(incontext_score)
-    comet_rag.append(rag_score)
-    comet_cotA.append(cotA_score)
-    comet_cotB.append(cotB_score)
+    comet_base.append(base_score[0])
+    comet_incontext.append(incontext_score[0])
+    comet_rag.append(rag_score[0])
+    comet_cotA.append(cotA_score[0])
+    comet_cotB.append(cotB_score[0])
 
     # Reference for second set: idiom_sentence from the CSV
     ref_idiom = row['idiom_sentence']
 
-    # Compute COMET scores using idiom_sentence as reference.
+    # Compute COMET scores using the idiom sentence as reference.
     base_score_idiom = compute_comet_score(row['base_model_output'], ref_idiom) if row['base_model_output'] and ref_idiom else None
     incontext_score_idiom = compute_comet_score(row['incontext_model_output'], ref_idiom) if row['incontext_model_output'] and ref_idiom else None
     rag_score_idiom = compute_comet_score(row['rag_model_output'], ref_idiom) if row['rag_model_output'] and ref_idiom else None
@@ -116,12 +119,31 @@ for idx, row in tqdm(results_df.iterrows(), total=len(results_df), desc="Process
     cotB_score_idiom = compute_comet_score(row['cotB_model_output'], ref_idiom) if row['cotB_model_output'] and ref_idiom else None
     correct_score_idiom = compute_comet_score(row['correct_translation'], ref_idiom) if row['correct_translation'] and ref_idiom else None
 
-    comet_base_idiom.append(base_score_idiom)
-    comet_incontext_idiom.append(incontext_score_idiom)
-    comet_rag_idiom.append(rag_score_idiom)
-    comet_cotA_idiom.append(cotA_score_idiom)
-    comet_cotB_idiom.append(cotB_score_idiom)
-    comet_correct_idiom.append(correct_score_idiom)
+    comet_base_idiom.append(base_score_idiom[0])
+    comet_incontext_idiom.append(incontext_score_idiom[0])
+    comet_rag_idiom.append(rag_score_idiom[0])
+    comet_cotA_idiom.append(cotA_score_idiom[0])
+    comet_cotB_idiom.append(cotB_score_idiom[0])
+    comet_correct_idiom.append(correct_score_idiom[0])
+
+    if (idx + 1) % CHECKPOINT_INTERVAL == 0:
+        results_df.loc[:idx, 'comet_base'] = comet_base
+        results_df.loc[:idx, 'comet_incontext'] = comet_incontext
+        results_df.loc[:idx, 'comet_rag'] = comet_rag
+        results_df.loc[:idx, 'comet_cotA'] = comet_cotA
+        results_df.loc[:idx, 'comet_cotB'] = comet_cotB
+
+        results_df.loc[:idx, 'comet_base_idiom'] = comet_base_idiom
+        results_df.loc[:idx, 'comet_incontext_idiom'] = comet_incontext_idiom
+        results_df.loc[:idx, 'comet_rag_idiom'] = comet_rag_idiom
+        results_df.loc[:idx, 'comet_cotA_idiom'] = comet_cotA_idiom
+        results_df.loc[:idx, 'comet_cotB_idiom'] = comet_cotB_idiom
+        results_df.loc[:idx, 'comet_correct_idiom'] = comet_correct_idiom
+
+        checkpoint_number = (idx + 1) // CHECKPOINT_INTERVAL
+        checkpoint_filename = f'/checkpoints/checkpoint_{checkpoint_number}.csv'
+        results_df.iloc[:idx+1].to_csv(checkpoint_filename, index=False, encoding='utf-8')
+        print(f"Checkpoint {checkpoint_number} saved: {checkpoint_filename}")
 
 
 results_df['comet_base'] = comet_base
@@ -137,6 +159,7 @@ results_df['comet_cotA_idiom'] = comet_cotA_idiom
 results_df['comet_cotB_idiom'] = comet_cotB_idiom
 results_df['comet_correct_idiom'] = comet_correct_idiom
 
+
 output_csv = 'combined_translations_and_comet_scores.csv'
 results_df.to_csv(output_csv, index=False, encoding='utf-8')
-print(f"Results saved to {output_csv}")
+print(f"Final results saved to {output_csv}")
