@@ -4,16 +4,23 @@ import json
 import torch
 from comet import download_model, load_from_checkpoint
 
-LLM_VERSION = "Meta-Llama-3.1-8B-Instruct_20250317_151054"
+#base:
+LLM_VERSION = "Meta-Llama-3.1-8B-Instruct_20250401_101254"
+#incontext:
+# LLM_VERSION = "Meta-Llama-3.1-8B-Instruct_20250409_141335"
 RESULTS_FILE = f"comet_scores_{LLM_VERSION}"
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(script_dir, '..', '..'))
-data_file = os.path.join(project_root, 'results', f'idiom_translation_{LLM_VERSION}.csv')
+data_file = os.path.join(project_root, 'results', f'idiom_translation_{LLM_VERSION}.json')
 
 output_dir = os.path.join(project_root, 'metrics', 'comet', 'outputs')
 os.makedirs(output_dir, exist_ok=True)
-df = pd.read_csv(data_file)
+
+with open(data_file, 'r') as f:
+    data_json = json.load(f)
+
+translations = data_json.get("translations", [])
 
 model_path = download_model("Unbabel/wmt22-comet-da")
 comet = load_from_checkpoint(model_path)
@@ -22,20 +29,20 @@ comet.to(device)
 results = []
 
 id_val = 0
-for _, row in df.iterrows():
+for i, entry in enumerate(translations):
     # id_val = row['id']
-    reference = row['original_sentence']
-    hypothesis = row['translated_sentence']
+    reference = entry['original_sentence']
+    hypothesis = entry['translated_sentence']
 
     data = [{
-        "src": "",  # Source sentence is not used in this case
+        "src": "",  # Optional source sentence
         "mt": hypothesis,
         "ref": reference
     }]
 
     scores = comet.predict(data)
     score = scores["scores"][0]
-    results.append({'id': id_val, 'score': score})
+    results.append({'id_val': i, 'score': score})
     id_val += 1
 
 results_df = pd.DataFrame(results)
