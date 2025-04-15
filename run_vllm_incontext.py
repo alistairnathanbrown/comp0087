@@ -7,7 +7,7 @@ from datetime import datetime
 from vllm import LLM, SamplingParams
 from vllm.sampling_params import GuidedDecodingParams
 
-content_type = "in_context"
+content_type = "base"
 
 def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, checkpoint_interval=50, checkpoint_dir="checkpoints"):
     """
@@ -173,6 +173,7 @@ def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, che
             
         try:
             original_sentence = row["original_idiom_sentence"]
+            my_id = row["id"]
             print(f"Processing {idx+1}/{total}: {original_sentence[:50]}...")
             
             # Create conversation for the model
@@ -194,12 +195,17 @@ def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, che
                 full_text = output.outputs[0].text
                 try:
                     json_output = json.loads(full_text)
+                    # Attach the CSV "id" to the JSON output
+                    json_output["id"] = my_id
+        
                     results.append(json_output)
-                    print(f"✓ Successfully processed")
+                    print(f"✓ Successfully processed ID={my_id}")
                 except json.JSONDecodeError as e:
                     print(f"× Error parsing JSON: {e}")
+                    print(f"× Error parsing JSON for ID={my_id}: {e}")
                     # Store the error case with the original text
                     results.append({
+                        "id": my_id,
                         "original_sentence": original_sentence,
                         "translated_sentence": "ERROR: Could not parse model output",
                         "raw_output": full_text,
@@ -433,7 +439,7 @@ def main():
     parser = argparse.ArgumentParser(description="Idiom Translation using vLLM")
     parser.add_argument("--model", type=str, default="meta-llama/Meta-Llama-3.1-8B-Instruct",
                         help="Model name or path")
-    parser.add_argument("--csv", type=str, default="idiom_data/idiom_dataset.csv",
+    parser.add_argument("--csv", type=str, default="idiom_data/idiom_dataset_en.csv",
                         help="Path to CSV file with idiom sentences")
     parser.add_argument("--temperature", type=float, default=0.7,
                         help="Temperature for generation")
