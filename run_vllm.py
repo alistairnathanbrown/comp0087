@@ -7,11 +7,7 @@ from datetime import datetime
 from vllm import LLM, SamplingParams
 from vllm.sampling_params import GuidedDecodingParams
 
-content_type = "in_context"
-# content_type = "base"
-
-
-def translate_idioms(model_name, csv_path, temperature=0.2, max_tokens=1024, checkpoint_interval=50, checkpoint_dir="checkpoints"):
+def translate_idioms(model_name, csv_path, temperature=0.7, max_tokens=1024, checkpoint_interval=50, checkpoint_dir="checkpoints"):
     """
     Translates idiomatic expressions in sentences using the specified model.
     
@@ -54,79 +50,23 @@ def translate_idioms(model_name, csv_path, temperature=0.2, max_tokens=1024, che
         return []
     
     # System prompt for idiom translation
-    if content_type == "base":
-        print("Running Content Type: " + content_type)
-        content = """You are a translator specializing in idiomatic expressions. 
+    content = """You are a translator specializing in idiomatic expressions. 
 
-        You will be given a sentence with an idiom marked between ID tags like IDidiomID.
-        Your task is to replace the idiom with a NON-FIGURATIVE, LITERAL explanation of what the idiom means.
+    You will be given a sentence with an idiom marked between ID tags like IDidiomID.
+    Your task is to replace the idiom with a NON-FIGURATIVE, LITERAL explanation of what the idiom means.
 
-        IMPORTANT: Do NOT simply add spaces between words or make minor changes - you must completely replace the idiom with its literal, non-idiomatic meaning.
+    IMPORTANT: Do NOT simply add spaces between words or make minor changes - you must completely replace the idiom with its literal, non-idiomatic meaning.
 
-        Your response must be a valid JSON object with two fields:
-        1. 'original_sentence' (the exact input)
-        2. 'translated_sentence' (your translation with the idiom replaced with its literal meaning)
+    For example:
+    - If you see "IDraining catsID and dogs" you might translate it to "raining very heavily"
+    - If you see "IDkick the bucketID" you might translate it to "die"
+    - If you see "IDbananarepublicID" you might translate it to "politically unstable country with corrupt government"
 
-        Keep the overall sentence structure intact, changing only the idiom."""
-        
-    elif content_type == "in_context":
-        print("Running Content Type: " + content_type)
-        content = """You are a translator specializing in idiomatic expressions. 
+    Your response must be a valid JSON object with two fields:
+    1. 'original_sentence' (the exact input)
+    2. 'translated_sentence' (your translation with the idiom replaced with its literal meaning)
 
-        You will be given a sentence with an idiom marked between ID tags like IDidiomID.
-        Your task is to replace the idiom with a NON-FIGURATIVE, LITERAL explanation of what the idiom means.
-
-        IMPORTANT: Do NOT simply add spaces between words or make minor changes—you must completely replace the idiom with its literal, non-idiomatic meaning.
-
-        For example:
-
-        1. *Simple Idiom:*
-        - Input: "IDraining catsID and dogs"
-        - *Good Translation:* "raining very heavily"
-        - *Bad Translation:* "raining cats and dogs"  
-            (This is merely a repetition and does not explain the idiom.)
-
-        2. *Slightly Complex Idiom:*
-        - Input: "She really IDhit the nail on the headID with her comment."
-        - *Good Translation:* "correctly identified the main point with her comment"
-        - *Bad Translation:* "spoke accurately"  
-            (This lacks an explicit explanation of the idiomatic meaning.)
-
-        3. *Moderate Complexity:*
-        - Input: "He decided to IDbite the bulletID and face the challenge."
-        - *Good Translation:* "took decisive action to confront a painful or difficult situation"
-        - *Bad Translation:* "faced the challenge"  
-            (This is too vague and does not capture the full idiomatic meaning.)
-
-        4. *Increased Complexity:*
-        - Input: "When questioned about the scandal, he chose to IDbeat around the bushID rather than answer directly."
-        - *Good Translation:* "avoided addressing the main issue directly by giving evasive answers"
-        - *Bad Translation:* "talked indirectly"  
-            (This does not fully convey the idea of dodging a direct response.)
-
-        5. *High Complexity:*
-        - Input: "After the long debate, they agreed to IDcross that bridge when they come to itID."
-        - *Good Translation:* "deal with that problem only when it arises"
-        - *Bad Translation:* "handle the issue later"  
-            (This lacks clarity about postponing resolution until necessary.)
-
-        6. *Very High Complexity:*
-        - Input: "His relentless pressure finally IDpushed her over the edgeID."
-        - *Good Translation:* "caused her to lose control due to extreme stress or frustration"
-        - *Bad Translation:* "made her upset"  
-            (This oversimplifies and misses the severity of the situation.)
-
-        7. *Additional Nuanced Example:*
-        - Input: "Despite the mixed feedback, the team decided to IDface the musicID and accept the consequences."
-        - *Good Translation:* "accept the negative consequences of their actions despite the anticipated criticism"
-        - *Bad Translation:* "deal with the consequences"  
-            (This does not fully articulate the inevitability and impact of the outcome.)
-
-        Your response must be a valid JSON object with two fields:
-        1. 'original_sentence' (the exact input)
-        2. 'translated_sentence' (your translation with the idiom replaced with its literal meaning)
-
-        Keep the overall sentence structure intact, changing only the idiom."""
+    Keep the overall sentence structure intact, changing only the idiom."""
     
     guided_decoding_params = GuidedDecodingParams(json=json_schema)
     
@@ -175,7 +115,6 @@ def translate_idioms(model_name, csv_path, temperature=0.2, max_tokens=1024, che
             
         try:
             original_sentence = row["original_idiom_sentence"]
-            my_id = row["id"]
             print(f"Processing {idx+1}/{total}: {original_sentence[:50]}...")
             
             # Create conversation for the model
@@ -197,17 +136,12 @@ def translate_idioms(model_name, csv_path, temperature=0.2, max_tokens=1024, che
                 full_text = output.outputs[0].text
                 try:
                     json_output = json.loads(full_text)
-                    # Attach the CSV "id" to the JSON output
-                    json_output["id"] = my_id
-        
                     results.append(json_output)
-                    print(f"✓ Successfully processed ID={my_id}")
+                    print(f"✓ Successfully processed")
                 except json.JSONDecodeError as e:
                     print(f"× Error parsing JSON: {e}")
-                    print(f"× Error parsing JSON for ID={my_id}: {e}")
                     # Store the error case with the original text
                     results.append({
-                        "id": my_id,
                         "original_sentence": original_sentence,
                         "translated_sentence": "ERROR: Could not parse model output",
                         "raw_output": full_text,
@@ -441,7 +375,7 @@ def main():
     parser = argparse.ArgumentParser(description="Idiom Translation using vLLM")
     parser.add_argument("--model", type=str, default="meta-llama/Meta-Llama-3.1-8B-Instruct",
                         help="Model name or path")
-    parser.add_argument("--csv", type=str, default="idiom_data/idiom_dataset_en.csv",
+    parser.add_argument("--csv", type=str, default="idiom_data/idiom_dataset.csv",
                         help="Path to CSV file with idiom sentences")
     parser.add_argument("--temperature", type=float, default=0.7,
                         help="Temperature for generation")
@@ -470,7 +404,7 @@ def main():
     if args.run_id:
         run_id = args.run_id
         results = load_results_from_checkpoint(args.checkpoint_dir, run_id)
-        if results: 
+        if results:
             start_idx = len(results)
             print(f"Resuming from specific run ID: {run_id} (already processed {start_idx} sentences)")
         else:
