@@ -1,0 +1,34 @@
+{
+    "average_delta": 0.5189186437882448,
+    "min_delta": 0.003398374617099762,
+    "max_delta": 0.9938116902112961,
+    "median_delta": 0.554412907063961,
+    "correlations": {
+        "pearson": {
+            "coefficient": 0.7185346870010956,
+            "p_value": 0.0
+        },
+        "spearman": {
+            "coefficient": 0.6843565687548159,
+            "p_value": 0.0
+        },
+        "kendall": {
+            "coefficient": 0.5101767557501866,
+            "p_value": 0.0
+        }
+    },
+    "best_match": {
+        "s1": "Students take a ride on airwaves",
+        "s2": "5.5-magnitude quake hits off Taiwan",
+        "sts_score": 0.0,
+        "normalized_metric_score": 0.003398374617099762,
+        "delta": 0.003398374617099762
+    },
+    "worst_match": {
+        "s1": "The person is removing the scales from the fish.",
+        "s2": "A person is descaling a fish.",
+        "sts_score": 1.0,
+        "normalized_metric_score": 0.0061883097887039185,
+        "delta": 0.9938116902112961
+    }
+}

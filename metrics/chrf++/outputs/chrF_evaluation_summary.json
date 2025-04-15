@@ -1,0 +1,34 @@
+{
+    "average_delta": 0.19968557752656782,
+    "min_delta": 0.0,
+    "max_delta": 0.7266866026865106,
+    "median_delta": 0.1771675789385721,
+    "correlations": {
+        "pearson": {
+            "coefficient": 0.6078731125875378,
+            "p_value": 0.0
+        },
+        "spearman": {
+            "coefficient": 0.5991338337703688,
+            "p_value": 0.0
+        },
+        "kendall": {
+            "coefficient": 0.4282957598919234,
+            "p_value": 0.0
+        }
+    },
+    "best_match": {
+        "s1": "Swiss tourist gang-raped in India",
+        "s2": "Swiss tourist gang-raped in India",
+        "sts_score": 1.0,
+        "normalized_metric_score": 1.0,
+        "delta": 0.0
+    },
+    "worst_match": {
+        "s1": "Murray ends 77-year wait for British win",
+        "s2": "Murray wins Wimbledon title ends Britains 77year agony",
+        "sts_score": 1.0,
+        "normalized_metric_score": 0.2733133973134894,
+        "delta": 0.7266866026865106
+    }
+}

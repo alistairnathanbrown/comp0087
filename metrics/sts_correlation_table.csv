@@ -1,0 +1,5 @@
+Metric,Pearson,Kendall,Spearman
+bleu_score,0.332,0.256,0.374
+bleurt_score,0.507,0.444,0.566
+chrf_score,0.573,0.391,0.551
+comet_score,0.68,0.462,0.628
