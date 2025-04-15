@@ -74,7 +74,7 @@ def compute_comet_score(hypothesis: str, reference: str) -> float:
     return scores[0]
 
 # Define the checkpoint directory and ensure it exists.
-CHECKPOINT_DIR = '/checkpoints'
+CHECKPOINT_DIR = os.path.join(script_dir, 'checkpoints')
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
 # Initialize lists for storing COMET scores.
