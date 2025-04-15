@@ -3,15 +3,15 @@ import json
 import pandas as pd
 import torch
 from comet import download_model, load_from_checkpoint
-import tqdm
+from tqdm import tqdm
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 BASE_MODEL_OUTPUT = os.path.join(script_dir, "../../results/idiom_translation_Meta-Llama-3.1-8B-Instruct_20250415_122843.json")
 INCONTEXT_MODEL_OUTPUT = os.path.join(script_dir, "../../results/idiom_translation_Meta-Llama-3.1-8B-Instruct_20250415_115356.json")
 RAG_MODEL_OUTPUT = os.path.join(script_dir, "../../utils/idiom_translation_from_examples.csv")
-COTA_MODEL_OUTPUT = os.path.join(script_dir, "../../results/idiom_translation_Meta-Llama-3.1-8B-Instruct_20250414_213550_variant_prompt_a.json")
-COTB_MODEL_OUTPUT = os.path.join(script_dir, "../../results/idiom_translation_Meta-Llama-3.1-8B-Instruct_20250414_231142_variant_prompt_b.json")
+COTA_MODEL_OUTPUT = os.path.join(script_dir, "../../results/cot_a_with_id.json")
+COTB_MODEL_OUTPUT = os.path.join(script_dir, "../../results/cot_b_with_id.json")
 
 DATASET = os.path.join(script_dir, "../../idiom_data/idiom_dataset_en.csv")
 
@@ -122,6 +122,7 @@ for idx, row in tqdm(results_df.iterrows(), total=len(results_df), desc="Process
     comet_cotA_idiom.append(cotA_score_idiom)
     comet_cotB_idiom.append(cotB_score_idiom)
     comet_correct_idiom.append(correct_score_idiom)
+
 
 results_df['comet_base'] = comet_base
 results_df['comet_incontext'] = comet_incontext
